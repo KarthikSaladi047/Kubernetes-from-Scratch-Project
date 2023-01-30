@@ -76,25 +76,25 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
 
   etcd Binaries Download Page: https://github.com/etcd-io/etcd/releases/tag/v3.5.4
 
-**Server Binaries and etcd Binaries** - Download Server Binaries and etcd Binaries on Master Node
-  
-  ```
-  mkdir /root/binaries
-  cd /root/binaries
-  wget https://dl.k8s.io/v1.24.10/kubernetes-server-linux-amd64.tar.gz
-  tar -xzvf kubernetes-server-linux-amd64.tar.gz
-  cd /root/binaries/kubernetes/server/bin/
-  wget https://github.com/etcd-io/etcd/releases/download/v3.5.4/etcd-v3.5.4-linux-amd64.tar.gz
-  tar -xzvf etcd-v3.5.4-linux-amd64.tar.gz
-  ```
-**Node Binaries** - Download Node Binaries on Worker Node
-  
-  ```
-  mkdir /root/binaries
-  cd /root/binaries
-  wget https://dl.k8s.io/v1.24.10/kubernetes-node-linux-amd64.tar.gz
-  tar -xzvf kubernetes-node-linux-amd64.tar.gz
-  ```
+  **Server Binaries and etcd Binaries** - Download Server Binaries and etcd Binaries on Master Node
+
+    ```
+    mkdir /root/binaries
+    cd /root/binaries
+    wget https://dl.k8s.io/v1.24.10/kubernetes-server-linux-amd64.tar.gz
+    tar -xzvf kubernetes-server-linux-amd64.tar.gz
+    cd /root/binaries/kubernetes/server/bin/
+    wget https://github.com/etcd-io/etcd/releases/download/v3.5.4/etcd-v3.5.4-linux-amd64.tar.gz
+    tar -xzvf etcd-v3.5.4-linux-amd64.tar.gz
+    ```
+  **Node Binaries** - Download Node Binaries on Worker Node
+
+    ```
+    mkdir /root/binaries
+    cd /root/binaries
+    wget https://dl.k8s.io/v1.24.10/kubernetes-node-linux-amd64.tar.gz
+    tar -xzvf kubernetes-node-linux-amd64.tar.gz
+    ```
 
 ## Pattern for Configuration of Kubernetes components
 
