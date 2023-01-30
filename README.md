@@ -69,7 +69,7 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
   
 ## Download the binaries: 
 - Download the required software components binaries, including the etcd, kube-apiserver, kube-controller-manager, kube-scheduler, kube-proxy, kubelet and kubectl. 
- 
+
 - In this project I am using kubernetes version **v1.24.10** and etcd version **v3.5.4**.
 
   Kubernetes Binaries Download Page: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.24.md#downloads-for-v12410
