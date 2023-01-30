@@ -76,7 +76,8 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
 
   etcd Binaries Download Page: https://github.com/etcd-io/etcd/releases/tag/v3.5.4
 
-**On Master Node** - Download Server Binaries and etcd Binaries
+**Server Binaries and etcd Binaries** - Download Server Binaries and etcd Binaries on Master Node
+  
   ```
   mkdir /root/binaries
   cd /root/binaries
@@ -86,7 +87,8 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
   wget https://github.com/etcd-io/etcd/releases/download/v3.5.4/etcd-v3.5.4-linux-amd64.tar.gz
   tar -xzvf etcd-v3.5.4-linux-amd64.tar.gz
   ```
-**On Worker Node** - Download Node Binaries
+**Node Binaries** - Download Node Binaries on Worker Node
+  
   ```
   mkdir /root/binaries
   cd /root/binaries
@@ -126,12 +128,14 @@ There are some common set of steps that need to be performed at individual compo
 
 ## Configure etcd: 
 
-**What is etcd ?** 
-          etcd is a strongly consistent, distributed key-value store that provides a reliable way to store data that needs to be accessed by a distributed system or cluster of machines. It gracefully handles leader elections during network partitions and can tolerate machine failure, even in the leader node.
+**What is etcd ?**
+
+  etcd is a strongly consistent, distributed key-value store that provides a reliable way to store data that needs to be accessed by a distributed system or cluster of machines. It gracefully handles leader elections during network partitions and can tolerate machine failure, even in the leader node.
 
 Set up etcd on master node as the key-value store for the cluster.
 
 **Certificate creation for etcd**
+  
   ```
   SERVER_IP=<your server private ip address>
   cd /root/certificates/
@@ -154,11 +158,13 @@ Set up etcd on master node as the key-value store for the cluster.
   rm -f etcd.csr etcd.cnf
   ```
 **Copy the ETCD and ETCDCTL Binaries to the Path**
+  
   ```
   cd /root/binaries/kubernetes/server/bin/etcd-v3.5.4-linux-amd64/
   cp etcd etcdctl /usr/local/bin/
   ```
 **Configure the systemd File for etcd**
+  
   ```
   cat <<EOF | sudo tee /etc/systemd/system/etcd.service
   [Unit]
@@ -175,6 +181,7 @@ Set up etcd on master node as the key-value store for the cluster.
   EOF
   ```
 **Start Service -> etcd**
+  
   ```
   systemctl start etcd
   systemctl status etcd
@@ -186,9 +193,10 @@ Set up etcd on master node as the key-value store for the cluster.
 
   The kube-apiserver is the component of a Kubernetes cluster responsible for exposing the Kubernetes API. It provides the central interface for all cluster management functions, including create, update, and delete operations for various resources such as pods, services, and components. The kube-apiserver acts as a front-end for the Kubernetes control plane and communicates with other components such as etcd, the backend datastore, and the kube-controller-manager to ensure the desired state of the cluster is maintained. The kube-apiserver is also responsible for authentication and authorization of API requests, ensuring that only authorized entities can perform actions on the cluster.
   
-  Set up the kube-apiserver on one node to act as the central management component for the cluster.
+Set up the kube-apiserver on one node to act as the central management component for the cluster.
 
 **Certificate creation for kube-apiserver**
+  
   ```
   SERVER_IP=<your server private ip address>
   cd /root/certificates
@@ -229,6 +237,7 @@ Set up etcd on master node as the key-value store for the cluster.
   ```
 **Encryption key & EncryptionConfig yaml file Creation**
   This file contains the configuration for encryption provider and it is requied for Kube-API-Sererver to store secrets inside etcd. So before creation of this config file we need to create a encryption key, which is used to encrypt the secrets before storing them in etcd.
+  
   ```
   ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
   cat > encryption-at-rest.yaml <<EOF
@@ -246,11 +255,13 @@ Set up etcd on master node as the key-value store for the cluster.
   EOF
   ```
 **Copy Kube-apiserver Binaries to the Path**
+  
   ```
   cd /root/binaries/kubernetes/server/bin/
   cp kube-apiserver /usr/local/bin/
   ```
 **Configure the systemd File for kube-apiserver**
+  
   ```
   cat <<EOF | sudo tee /etc/systemd/system/kube-apiserver.service
   [Unit]
@@ -267,6 +278,7 @@ Set up etcd on master node as the key-value store for the cluster.
   EOF
   ```
 **Start Service -> kube-apiserver**
+  
   ```
   systemctl start kube-apiserver
   systemctl status kube-apiserver
