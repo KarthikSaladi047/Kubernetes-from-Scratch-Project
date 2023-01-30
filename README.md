@@ -53,7 +53,7 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
           <td>Master node</td>
           <td align="right">4 GB</td>
           <td align="right">2</td>
-          <td align="right">kube-api-server, kube-scheduler, kube controller, etcd</td>
+          <td align="right">kube-apiserver, kube-scheduler, kube controller, etcd</td>
         </tr>
         <tr>
           <td>Worker node</td>
@@ -102,7 +102,7 @@ There are some common set of steps that need to be performed at individual compo
 
 - **Certificate:** We will be generating a set of certificates and keys for each component for secure communication between components.
  
-- **Kubeconfig:** As multiple components interact with kube-api-server, we need to generate a kubeconfig file for individual components.
+- **Kubeconfig:** As multiple components interact with kube-apiserver, we need to generate a kubeconfig file for individual components.
  
 - **Configuration of Component:** Each component of cluster will have its unique set of configuration options that control its functionality.
 
@@ -131,11 +131,10 @@ There are some common set of steps that need to be performed at individual compo
 
 Set up etcd on master node as the key-value store for the cluster.
 
-**Certificate creation**
+**Certificate creation for etcd**
   ```
   SERVER_IP=<your server private ip address>
   cd /root/certificates/
-  openssl genrsa -out etcd.key 2048 
   cat > etcd.cnf <<EOF
   [req]
   req_extensions = v3_req
@@ -149,6 +148,7 @@ Set up etcd on master node as the key-value store for the cluster.
   IP.1 = ${SERVER_IP}
   IP.2 = 127.0.0.1
   EOF
+  openssl genrsa -out etcd.key 2048 
   openssl req -new -key etcd.key -subj "/CN=etcd" -out etcd.csr -config etcd.cnf
   openssl x509 -req -in etcd.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out etcd.crt -extensions v3_req -extfile etcd.cnf -days 365
   rm -f etcd.csr etcd.cnf
@@ -158,7 +158,7 @@ Set up etcd on master node as the key-value store for the cluster.
   cd /root/binaries/kubernetes/server/bin/etcd-v3.5.4-linux-amd64/
   cp etcd etcdctl /usr/local/bin/
   ```
-**Configure the systemd File**
+**Configure the systemd File for etcd**
   ```
   cat <<EOF | sudo tee /etc/systemd/system/etcd.service
   [Unit]
@@ -174,15 +174,104 @@ Set up etcd on master node as the key-value store for the cluster.
   WantedBy=multi-user.target
   EOF
   ```
-**Start Service**
+**Start Service -> etcd**
   ```
   systemctl start etcd
   systemctl status etcd
   systemctl enable etcd
   ```
-## Configure the API server: 
-- Set up the kube-apiserver on one node to act as the central management component for the cluster.
+## Configure the API server:
 
+**What is kube-apiserver?**
+
+  The kube-apiserver is the component of a Kubernetes cluster responsible for exposing the Kubernetes API. It provides the central interface for all cluster management functions, including create, update, and delete operations for various resources such as pods, services, and components. The kube-apiserver acts as a front-end for the Kubernetes control plane and communicates with other components such as etcd, the backend datastore, and the kube-controller-manager to ensure the desired state of the cluster is maintained. The kube-apiserver is also responsible for authentication and authorization of API requests, ensuring that only authorized entities can perform actions on the cluster.
+  
+  Set up the kube-apiserver on one node to act as the central management component for the cluster.
+
+**Certificate creation for kube-apiserver**
+  ```
+  SERVER_IP=<your server private ip address>
+  cd /root/certificates
+  cat <<EOF | sudo tee kube-api.conf
+  [req]
+  req_extensions = v3_req
+  distinguished_name = req_distinguished_name
+  [req_distinguished_name]
+  [ v3_req ]
+  basicConstraints = CA:FALSE
+  keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+  subjectAltName = @alt_names
+  [alt_names]
+  DNS.1 = kubernetes
+  DNS.2 = kubernetes.default
+  DNS.3 = kubernetes.default.svc
+  DNS.4 = kubernetes.default.svc.cluster.local
+  IP.1 = 127.0.0.1
+  IP.2 = ${SERVER_IP}
+  IP.3 = 10.32.0.1
+  EOF
+  openssl genrsa -out kube-api.key 2048
+  openssl req -new -key kube-api.key -subj "/CN=kube-apiserver" -out kube-api.csr -config kube-api.conf
+  openssl x509 -req -in kube-api.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-api.crt -extensions v3_req -extfile api.conf -days 365
+  rm -f kube-api.csr kube-api.conf
+  ```
+**Certificate Creation for Service Account**
+  
+  Service Accounts in Kubernetes are used to grant access to the API server to perform actions on behalf of a particular entity, such as a user or a system component. The Service Account key pair is used to sign tokens that represent the identity of a Service Account, and are passed as part of API requests to the API server.
+
+  By specifying the path to the Service Account private key file using the --service-account-key-file option while configuring the Kube-apiserver, the API server can use the key to sign tokens for Service Accounts and verify the signatures on incoming tokens. This ensures that only authorized Service Accounts can perform actions on the API server.
+
+  ```
+  openssl genrsa -out service-account.key 2048
+  openssl req -new -key service-account.key -subj "/CN=service-accounts" -out service-account.csr
+  openssl x509 -req -in service-account.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out service-account.crt -days 365
+  rm -f service-account.csr
+  ```
+**Encryption key & EncryptionConfig yaml file Creation**
+  This file contains the configuration for encryption provider and it is requied for Kube-API-Sererver to store secrets inside etcd. So before creation of this config file we need to create a encryption key, which is used to encrypt the secrets before storing them in etcd.
+  ```
+  ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
+  cat > encryption-at-rest.yaml <<EOF
+  kind: EncryptionConfig
+  apiVersion: v1
+  resources:
+    - resources:
+        - secrets
+      providers:
+        - aescbc:
+            keys:
+              - name: key1
+                secret: ${ENCRYPTION_KEY}
+        - identity: {}
+  EOF
+  ```
+**Copy Kube-apiserver Binaries to the Path**
+  ```
+  cd /root/binaries/kubernetes/server/bin/
+  cp kube-apiserver /usr/local/bin/
+  ```
+**Configure the systemd File for kube-apiserver**
+  ```
+  cat <<EOF | sudo tee /etc/systemd/system/kube-apiserver.service
+  [Unit]
+  Description=Kubernetes API Server
+  Documentation=https://github.com/kubernetes/kubernetes
+
+  [Service]
+  ExecStart=/usr/local/bin/kube-apiserver --advertise-address=${SERVER_IP} --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/root/certificates/ca.crt --enable-admission-plugins=NamespaceLifecycle,NodeRestriction,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota --enable-bootstrap-token-auth=true --etcd-cafile=/root/certificates/ca.crt --etcd-certfile=/root/certificates/etcd.crt --etcd-keyfile=/root/certificates/etcd.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/root/certificates/kube-api.crt --kubelet-client-key=/root/certificates/kube-api.key --service-account-key-file=/root/certificates/service-account.crt --service-cluster-ip-range=10.32.0.0/24 --tls-cert-file=/root/certificates/kube-api.crt --tls-private-key-file=/root/certificates/kube-api.key --requestheader-client-ca-file=/root/certificates/ca.crt --service-node-port-range=30000-32767 --audit-log-maxage=30 --audit-log-maxbackup=3 --audit-log-maxsize=100 --audit-log-path=/var/log/kube-api-audit.log --bind-address=0.0.0.0 --event-ttl=1h --service-account-key-file=/root/certificates/service-account.crt --service-account-signing-key-file=/root/certificates/service-account.key --service-account-issuer=https://${SERVER_IP}:6443 --encryption-provider-config=/root/certificates/encryption-at-rest.yaml --v=2
+  Restart=on-failure
+  RestartSec=5
+
+  [Install]
+  WantedBy=multi-user.target
+  EOF
+  ```
+**Start Service -> kube-apiserver**
+  ```
+  systemctl start kube-apiserver
+  systemctl status kube-apiserver
+  systemctl enable kube-apiserver
+  ```
 ## Configure the controller manager: 
 - Set up the kube-controller-manager on one node to manage the state of the cluster and perform tasks such as replicating pods.
 
