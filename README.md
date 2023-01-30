@@ -7,6 +7,8 @@ Note: Currently working on this project
 
 Kubernetes, also known as K8s, is an open source system for managing containerized applications across multiple hosts. It provides basic mechanisms for deployment, maintenance, and scaling of applications. Kubernetes is hosted by the Cloud Native Computing Foundation (CNCF).
 
+![Untitled design](https://user-images.githubusercontent.com/105864615/215563455-bc448818-7ff8-49ce-9c39-4cf4bbc2d7f1.jpg)
+
 Key Features of Kubernetes are:
 
 - Automated rollouts and rollbacks
@@ -27,7 +29,7 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
 
 ## Kubernetes Cluster Architecture
 
-![components-of-kubernetes](https://user-images.githubusercontent.com/105864615/215435972-e097d12e-c7db-49f9-85a7-b5b41a625b3f.png)
+![kube cluster](https://user-images.githubusercontent.com/105864615/215555315-303fb360-360d-40e0-9bcd-0f81cd0c8e94.jpg)
 
 👑 The Master Node components make global decisions about the cluster, as well as detecting and responding to cluster events. These components can be run on any machine in the cluster. However, for simplicity, set up scripts typically start all control plane components on the same machine, and do not run user containers on this machine.
 
@@ -139,6 +141,8 @@ Set up etcd on master node as the key-value store for the cluster.
   ```
   SERVER_IP=<your server private ip address>
   cd /root/certificates/
+  ```
+  ```
   cat > etcd.cnf <<EOF
   [req]
   req_extensions = v3_req
@@ -152,6 +156,8 @@ Set up etcd on master node as the key-value store for the cluster.
   IP.1 = ${SERVER_IP}
   IP.2 = 127.0.0.1
   EOF
+  ```
+  ```
   openssl genrsa -out etcd.key 2048 
   openssl req -new -key etcd.key -subj "/CN=etcd" -out etcd.csr -config etcd.cnf
   openssl x509 -req -in etcd.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out etcd.crt -extensions v3_req -extfile etcd.cnf -days 365
@@ -200,6 +206,8 @@ Set up the kube-apiserver on one node to act as the central management component
   ```
   SERVER_IP=<your server private ip address>
   cd /root/certificates
+  ```
+  ```
   cat <<EOF | sudo tee kube-api.conf
   [req]
   req_extensions = v3_req
@@ -218,6 +226,8 @@ Set up the kube-apiserver on one node to act as the central management component
   IP.2 = ${SERVER_IP}
   IP.3 = 10.32.0.1
   EOF
+  ```
+  ```
   openssl genrsa -out kube-api.key 2048
   openssl req -new -key kube-api.key -subj "/CN=kube-apiserver" -out kube-api.csr -config kube-api.conf
   openssl x509 -req -in kube-api.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-api.crt -extensions v3_req -extfile api.conf -days 365
@@ -240,6 +250,8 @@ Set up the kube-apiserver on one node to act as the central management component
   
   ```
   ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
+  ```
+  ```
   cat > encryption-at-rest.yaml <<EOF
   kind: EncryptionConfig
   apiVersion: v1
