@@ -7,7 +7,7 @@ Note: Currently working on this project
 
 Kubernetes, also known as K8s, is an open source system for managing containerized applications across multiple hosts. It provides basic mechanisms for deployment, maintenance, and scaling of applications. Kubernetes is hosted by the Cloud Native Computing Foundation (CNCF).
 
-KeY Features of Kubernetes are:
+Key Features of Kubernetes are:
 
 - Automated rollouts and rollbacks
 - Service discovery and load balancing
@@ -23,7 +23,7 @@ KeY Features of Kubernetes are:
 
 Official Kubernetes Documentation: https://kubernetes.io/
 
-Kubernetes Project GitHub: https://github.com/kubernetes/kubernetes
+Kubernetes GitHub: https://github.com/kubernetes/kubernetes
 
 ## Kubernetes Cluster Architecture
 
@@ -72,9 +72,9 @@ Kubernetes Project GitHub: https://github.com/kubernetes/kubernetes
  
 - In this project I am using kubernetes version **v1.24.10** and etcd version **v3.5.4**.
 
-  kubernetes download page: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.24.md#downloads-for-v12410
+  Kubernetes Binaries Download Page: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.24.md#downloads-for-v12410
 
-  etcd download page: https://github.com/etcd-io/etcd/releases/tag/v3.5.4
+  etcd Binaries Download Page: https://github.com/etcd-io/etcd/releases/tag/v3.5.4
 
 **On Master Node** - Download Server Binaries and etcd Binaries
   ```
@@ -96,7 +96,7 @@ Kubernetes Project GitHub: https://github.com/kubernetes/kubernetes
 
 ## Pattern for Configuration of Kubernetes components
 
-Before getting started with configuration of individual component of the kubernetes cluster, We need to decide by which patter we are configuring the cluster compontents. If we don't follow a patterned approach, it will be very difficult to establish relationship as well as secure communication between different comonents of the cluster.
+Before getting started with configuration of individual component of the kubernetes cluster, We need to decide by which pattern we are configuring the cluster components. If we don't follow a patterned approach, it will be very difficult to establish relationship as well as secure communication between different components of the cluster.
 
 There are some common set of steps that need to be performed at individual component level. They are
 
@@ -125,10 +125,11 @@ There are some common set of steps that need to be performed at individual compo
 - Now using ca.crt and ca.key , we will issue keys & certificates for other components.
 
 ## Configure etcd: 
-- Set up etcd on master node as the key-value store for the cluster.
 
 **What is etcd ?** 
           etcd is a strongly consistent, distributed key-value store that provides a reliable way to store data that needs to be accessed by a distributed system or cluster of machines. It gracefully handles leader elections during network partitions and can tolerate machine failure, even in the leader node.
+
+Set up etcd on master node as the key-value store for the cluster.
 
 **Certificate creation**
   ```
