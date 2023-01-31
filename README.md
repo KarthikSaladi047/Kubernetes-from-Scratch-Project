@@ -129,7 +129,7 @@ There are some common set of steps that need to be performed at individual compo
   openssl x509 -req -in ca.csr -signkey ca.key -CAcreateserial  -out ca.crt -days 365
   rm -f ca.csr
   ```
-- Now using ca.crt and ca.key , we will issue keys & certificates for other components.
+- Now using ca.crt and ca.key, we will issue keys & certificates for other components.
 
 ## Configure etcd: 
 
@@ -145,8 +145,7 @@ Set up etcd on master node as the key-value store for the cluster.
   ```
   SERVER_IP=<your server private ip address>
   cd /root/certificates/
-  ```
-  ```
+  {
   cat > etcd.cnf <<EOF
   [req]
   req_extensions = v3_req
@@ -160,8 +159,7 @@ Set up etcd on master node as the key-value store for the cluster.
   IP.1 = ${SERVER_IP}
   IP.2 = 127.0.0.1
   EOF
-  ```
-  ```
+  }
   openssl genrsa -out etcd.key 2048 
   openssl req -new -key etcd.key -subj "/CN=etcd" -out etcd.csr -config etcd.cnf
   openssl x509 -req -in etcd.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out etcd.crt -extensions v3_req -extfile etcd.cnf -days 365
@@ -208,8 +206,7 @@ Set up etcd on master node as the key-value store for the cluster.
   ```
   SERVER_IP=<your server private ip address>
   cd /root/certificates
-  ```
-  ```
+  {
   cat <<EOF | sudo tee kube-api.conf
   [req]
   req_extensions = v3_req
@@ -228,8 +225,7 @@ Set up etcd on master node as the key-value store for the cluster.
   IP.2 = ${SERVER_IP}
   IP.3 = 10.32.0.1
   EOF
-  ```
-  ```
+  }
   openssl genrsa -out kube-api.key 2048
   openssl req -new -key kube-api.key -subj "/CN=kube-apiserver" -out kube-api.csr -config kube-api.conf
   openssl x509 -req -in kube-api.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-api.crt -extensions v3_req -extfile api.conf -days 365
@@ -253,8 +249,7 @@ Set up etcd on master node as the key-value store for the cluster.
   
   ```
   ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
-  ```
-  ```
+  {
   cat > encryption-at-rest.yaml <<EOF
   kind: EncryptionConfig
   apiVersion: v1
@@ -268,6 +263,7 @@ Set up etcd on master node as the key-value store for the cluster.
                 secret: ${ENCRYPTION_KEY}
         - identity: {}
   EOF
+  }
   ```
 **Copy Kube-apiserver Binaries to the Path:**
   
@@ -321,19 +317,28 @@ Set up etcd on master node as the key-value store for the cluster.
   openssl x509 -req -in kube-controller-manager.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out kube-controller-manager.crt -days 365
   rm -f kube-controller-manager.csr
   ```
-**Copy kube-controller-manager & kubectl Binaries to the Path:**
-
+**Copy kubectl Binaries to the Path:**
+  
+  Before creating the KubeConfig file for differeng components, we need to have kubectl in place.
+  
   ```
-  cd /root/binaries/kubernetes/server/bin/
-  cp kube-controller-manager kubectl /usr/local/bin/
+  cp /root/binaries/kubernetes/server/bin/kubectl /usr/local/bin
   ```
 **KubeConfig Creation for kube-controller-manager:**
 
   ```
+  {
   kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=kube-controller-manager.kubeconfig
   kubectl config set-credentials system:kube-controller-manager --client-certificate=kube-controller-manager.crt --client-key=kube-controller-manager.key --embed-certs=true --kubeconfig=kube-controller-manager.kubeconfig
   kubectl config set-context default --cluster=kubernetes-from-scratch --user=system:kube-controller-manager --kubeconfig=kube-controller-manager.kubeconfig   
   kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconfig
+  }
+  ```
+**Copy kube-controller-manager Binaries to the Path:**
+
+  ```
+  cd /root/binaries/kubernetes/server/bin/
+  cp kube-controller-manager /usr/local/bin/
   ```
 **Configure the systemd File for kube-controller-manager:**
   
@@ -344,7 +349,7 @@ Set up etcd on master node as the key-value store for the cluster.
   Documentation=https://github.com/kubernetes/kubernetes
 
   [Service]
-  ExecStart=/usr/local/bin/kube-controller-manager --bind-address=0.0.0.0 --service-cluster-ip-range=10.32.0.0/24 --cluster-cidr=10.200.0.0/16 --kubeconfig=/var/lib/kubernetes/kube-controller-manager.kubeconfig --authentication-kubeconfig=/var/lib/kubernetes/kube-controller-manager.kubeconfig --authorization-kubeconfig=/var/lib/kubernetes/kube-controller-manager.kubeconfig --leader-elect=true --cluster-signing-cert-file=/var/lib/kubernetes/ca.crt --cluster-signing-key-file=/var/lib/kubernetes/ca.key --root-ca-file=/var/lib/kubernetes/ca.crt --service-account-private-key-file=/var/lib/kubernetes/service-account.key --use-service-account-credentials=true --v=2
+  ExecStart=/usr/local/bin/kube-controller-manager --bind-address=0.0.0.0 --service-cluster-ip-range=10.32.0.0/24 --cluster-cidr=10.200.0.0/16 --kubeconfig=/root/certificates/kube-controller-manager.kubeconfig --authentication-kubeconfig=/root/certificates/kube-controller-manager.kubeconfig --authorization-kubeconfig=/root/certificates/kube-controller-manager.kubeconfig --leader-elect=true --cluster-signing-cert-file=/root/certificates/ca.crt --cluster-signing-key-file=/root/certificates/ca.key --root-ca-file=/root/certificates/ca.crt --service-account-private-key-file=/root/certificates/service-account.key --use-service-account-credentials=true --v=2
   Restart=on-failure
   RestartSec=5
 
@@ -361,7 +366,68 @@ Set up etcd on master node as the key-value store for the cluster.
   ```
 
 ## Configure the scheduler: 
-- Set up the kube-scheduler on one node to assign pods to nodes based on resource requirements and constraints.
+
+**What is kube-scheduler?**
+
+  The kube-scheduler is a component in a Kubernetes cluster that assigns work to individual nodes. The kube-scheduler decides which node a newly created pod should run on, based on the available resources on each node and the constraints specified for the pod.
+
+  The kube-scheduler uses information about the state of the cluster, such as the CPU and memory utilization of each node, to make its scheduling decisions. It also takes into account various constraints specified by the user, such as required network access, affinity and anti-affinity rules, and node labels.
+
+  The kube-scheduler runs as a separate process in the cluster and communicates with the API server to retrieve information about pods that need to be scheduled and the state of the nodes in the cluster. When a scheduling decision is made, the kube-scheduler updates the API server with the chosen node for the pod, and the kubelet on the selected node is responsible for pulling the pod and starting it.
+
+  By managing the assignment of work to nodes in the cluster, the kube-scheduler helps ensure that the cluster's resources are used effectively and efficiently, and that pods are placed on nodes that have the necessary resources to run them.
+
+**Certificate creation for kube-scheduler:**
+  
+  ```
+  SERVER_IP=<your server private ip address>
+  cd /root/certificates
+  openssl genrsa -out kube-scheduler.key 2048
+  openssl req -new -key kube-scheduler.key -subj "/CN=system:kube-scheduler" -out kube-scheduler.csr
+  openssl x509 -req -in kube-scheduler.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-scheduler.crt -days 365
+  rm -f kube-scheduler.csr
+  ```
+**KubeConfig Creation for kube-scheduler:**
+
+  ```
+  cd /root/certificates
+  {
+  kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=kube-scheduler.kubeconfig
+  kubectl config set-credentials system:kube-scheduler --client-certificate=kube-scheduler.crt --client-key=kube-scheduler.key --embed-certs=true --kubeconfig=kube-scheduler.kubeconfig
+  kubectl config set-context default --cluster=kubernetes-from-scratch --user=system:kube-scheduler --kubeconfig=kube-scheduler.kubeconfig
+  kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
+  }
+  ```
+**Copy kube-scheduler Binaries to the Path:**
+
+  ```
+  cd /root/binaries/kubernetes/server/bin/
+  cp kube-scheduler /usr/local/bin/
+  ```
+**Configure the systemd File for kube-scheduler:**
+  
+  ```
+  cat <<EOF | sudo tee /etc/systemd/system/kube-scheduler.service
+  [Unit]
+  Description=Kubernetes Scheduler
+  Documentation=https://github.com/kubernetes/kubernetes
+
+  [Service]
+  ExecStart=/usr/local/bin/kube-scheduler --kubeconfig=/root/certificates/kube-scheduler.kubeconfig --authentication-kubeconfig=/root/certificates/kube-scheduler.kubeconfig --authorization-kubeconfig=/root/certificates/kube-scheduler.kubeconfig --bind-address=127.0.0.1 --leader-elect=true
+  Restart=on-failure
+  RestartSec=5
+
+  [Install]
+  WantedBy=multi-user.target
+  EOF
+  ```
+**Start Service -> kube-scheduler:**
+  
+  ```
+  systemctl start kube-scheduler
+  systemctl status kube-scheduler
+  systemctl enable kube-scheduler
+  ```
 
 ## Configure the kubelet: 
 - On each node, configure the kubelet to connect to the API server and to manage containers on the node.
