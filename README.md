@@ -1,4 +1,4 @@
-# <p style="color:blue;"> Kubernetes-from-Scratch-Project </p>
+# Kubernetes-from-Scratch-Project
 Configuration of Kubernetes Cluster from Scratch
 
 Note: Currently working on this project
@@ -72,7 +72,8 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
 ## Install dependencies: 
 - Install the required dependencies on each node, including Docker and other packages needed by kubernetes components.
 ---
-# Master Node Configuration
+<h1>Master Node Configuration</h1>
+
 ## Download the binaries: 
 - Download the required software components binaries, including the etcd, kube-apiserver, kube-controller-manager, kube-scheduler, kube-proxy, kubelet and kubectl. 
 
@@ -82,7 +83,7 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
 
   etcd Binaries Download Page: https://github.com/etcd-io/etcd/releases/tag/v3.5.4
 
-**Server Binaries and etcd Binaries** - Download Server Binaries and etcd Binaries on Master Node
+**Download Server Binaries and etcd Binaries on to Master Node**
 
   ```
   mkdir /root/binaries
@@ -92,14 +93,6 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
   cd /root/binaries/kubernetes/server/bin/
   wget https://github.com/etcd-io/etcd/releases/download/v3.5.4/etcd-v3.5.4-linux-amd64.tar.gz
   tar -xzvf etcd-v3.5.4-linux-amd64.tar.gz
-  ```
-**Node Binaries** - Download Node Binaries on Worker Node
-
-  ```
-  mkdir /root/binaries
-  cd /root/binaries
-  wget https://dl.k8s.io/v1.24.10/kubernetes-node-linux-amd64.tar.gz
-  tar -xzvf kubernetes-node-linux-amd64.tar.gz
   ```
 
 ## Pattern for Configuration of Kubernetes components:
@@ -431,8 +424,43 @@ Set up etcd on master node as the key-value store for the cluster.
   systemctl status kube-scheduler
   systemctl enable kube-scheduler
   ```
+## Copying CA key & Certificate
+  Before moving to Configuration of worker node we need to copy the ca.crt & ca.key to Worker node from Master node, because we have to generate private keys and certificates for kubelet and kube-proxy using these key & certificate.
+  
+  *on Worker Node:
+  
+  Open file **/etc/ssh/sshd_config** and change the **PasswordAuthentication** to **yes**, then run following script.
+  ```
+  systemctl restart sshd
+  useradd karthik
+  passwd karthik
+  ```
+  and enter the passwd for user **'karthik'**
+  
+  *On Master Node:
+  ```
+  scp ca.crt karthik@192.168.55.104:/tmp
+  ```
+  
 ---
 # Worker Node Configuration
+## Download the binaries: 
+- Download the required software components binaries, including the kube-proxy, kubelet and kubectl. 
+
+- In this project I am using kubernetes version **v1.24.10**.
+
+  Kubernetes Binaries Download Page: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.24.md#downloads-for-v12410
+  
+**Download Node Binaries on to Worker Node**
+
+  ```
+  mkdir /root/binaries
+  cd /root/binaries
+  wget https://dl.k8s.io/v1.24.10/kubernetes-node-linux-amd64.tar.gz
+  tar -xzvf kubernetes-node-linux-amd64.tar.gz
+  ```
+## Configure Container Runtime (Docker)
+  
 ## Configure the kubelet: 
 - On each node, configure the kubelet to connect to the API server and to manage containers on the node.
 
