@@ -81,25 +81,25 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
 
   etcd Binaries Download Page: https://github.com/etcd-io/etcd/releases/tag/v3.5.4
 
-  **Server Binaries and etcd Binaries** - Download Server Binaries and etcd Binaries on Master Node
+**Server Binaries and etcd Binaries** - Download Server Binaries and etcd Binaries on Master Node
 
-    ```
-    mkdir /root/binaries
-    cd /root/binaries
-    wget https://dl.k8s.io/v1.24.10/kubernetes-server-linux-amd64.tar.gz
-    tar -xzvf kubernetes-server-linux-amd64.tar.gz
-    cd /root/binaries/kubernetes/server/bin/
-    wget https://github.com/etcd-io/etcd/releases/download/v3.5.4/etcd-v3.5.4-linux-amd64.tar.gz
-    tar -xzvf etcd-v3.5.4-linux-amd64.tar.gz
-    ```
-  **Node Binaries** - Download Node Binaries on Worker Node
+  ```
+  mkdir /root/binaries
+  cd /root/binaries
+  wget https://dl.k8s.io/v1.24.10/kubernetes-server-linux-amd64.tar.gz
+  tar -xzvf kubernetes-server-linux-amd64.tar.gz
+  cd /root/binaries/kubernetes/server/bin/
+  wget https://github.com/etcd-io/etcd/releases/download/v3.5.4/etcd-v3.5.4-linux-amd64.tar.gz
+  tar -xzvf etcd-v3.5.4-linux-amd64.tar.gz
+  ```
+**Node Binaries** - Download Node Binaries on Worker Node
 
-    ```
-    mkdir /root/binaries
-    cd /root/binaries
-    wget https://dl.k8s.io/v1.24.10/kubernetes-node-linux-amd64.tar.gz
-    tar -xzvf kubernetes-node-linux-amd64.tar.gz
-    ```
+  ```
+  mkdir /root/binaries
+  cd /root/binaries
+  wget https://dl.k8s.io/v1.24.10/kubernetes-node-linux-amd64.tar.gz
+  tar -xzvf kubernetes-node-linux-amd64.tar.gz
+  ```
 
 ## Pattern for Configuration of Kubernetes components:
 
@@ -120,6 +120,7 @@ There are some common set of steps that need to be performed at individual compo
 - Inorder to issue keys & certificates for individual components we need to have a Certificate Authority, which uses its own private key & Certificate to issue keys & certificates for other componets.
 
 - We use these certificates to establish secure communication between two components. To achieve this both the components need to trust the Certificate Authority.
+![PROMO-SecurityBlog-108_CloudHSM_Signed_Certs](https://user-images.githubusercontent.com/105864615/215741907-da77a5cf-b6b0-479d-a00a-94c8a4b98113.png)
 
   ```
   mkdir /root/certificates
@@ -130,7 +131,7 @@ There are some common set of steps that need to be performed at individual compo
   rm -f ca.csr
   ```
 - Now using ca.crt and ca.key, we will issue keys & certificates for other components.
-
+![T513523740_g](https://user-images.githubusercontent.com/105864615/215741721-ab93ab27-ced2-47af-8bed-9b93a499aa67.jpg)
 ## Configure etcd: 
 
 **What is etcd ?**
