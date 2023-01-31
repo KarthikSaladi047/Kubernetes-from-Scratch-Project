@@ -1,4 +1,4 @@
-# Kubernetes-from-Scratch-Project
+# <p style="color:blue;"> Kubernetes-from-Scratch-Project </p>
 Configuration of Kubernetes Cluster from Scratch
 
 Note: Currently working on this project
@@ -71,7 +71,8 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
 
 ## Install dependencies: 
 - Install the required dependencies on each node, including Docker and other packages needed by kubernetes components.
-  
+---
+# Master Node Configuration
 ## Download the binaries: 
 - Download the required software components binaries, including the etcd, kube-apiserver, kube-controller-manager, kube-scheduler, kube-proxy, kubelet and kubectl. 
 
@@ -120,6 +121,7 @@ There are some common set of steps that need to be performed at individual compo
 - Inorder to issue keys & certificates for individual components we need to have a Certificate Authority, which uses its own private key & Certificate to issue keys & certificates for other componets.
 
 - We use these certificates to establish secure communication between two components. To achieve this both the components need to trust the Certificate Authority.
+
 ![PROMO-SecurityBlog-108_CloudHSM_Signed_Certs](https://user-images.githubusercontent.com/105864615/215741907-da77a5cf-b6b0-479d-a00a-94c8a4b98113.png)
 
   ```
@@ -429,7 +431,8 @@ Set up etcd on master node as the key-value store for the cluster.
   systemctl status kube-scheduler
   systemctl enable kube-scheduler
   ```
-
+---
+# Worker Node Configuration
 ## Configure the kubelet: 
 - On each node, configure the kubelet to connect to the API server and to manage containers on the node.
 
