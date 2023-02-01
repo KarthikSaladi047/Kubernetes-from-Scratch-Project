@@ -499,6 +499,11 @@ Set up etcd on master node as the key-value store for the cluster.
   openssl x509 -req -in kubelet.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kubelet.crt -extensions v3_req -extfile kubelet.cnf -days 365
   rm -f kubelet.csr
   ```
+**Copy kubectl Binaries to the Path:**
+
+  ```
+  cp /root/binaries/kubernetes/node/bin/kubectl /usr/local/bin/
+  ```
 **Generate Kubelet Configuration YAML File:**
 
   ```
@@ -524,8 +529,7 @@ Set up etcd on master node as the key-value store for the cluster.
 **KubeConfig Creation for kubelet:**
 
   ```
-  cd /root/certificates
-  SERVER_IP=<ip address of master node>
+  SERVER_IP=<ip address of api server (Master node IP)>
   {
     kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=kubelet.kubeconfig
     kubectl config set-credentials system:node:kube-worker --client-certificate=kubelet.crt --client-key=kubelet.key --embed-certs=true --kubeconfig=kubelet.kubeconfig
@@ -582,39 +586,29 @@ Set up etcd on master node as the key-value store for the cluster.
   openssl x509 -req -in kube-proxy.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-proxy.crt -days 365
   rm -f kube-proxy.csr
   ```
-**Generate Kubelet Configuration YAML File:**
-
-  ```
-  cat <<EOF | sudo tee /root/certificates/kubelet-config.yaml
-  kind: KubeletConfiguration
-  apiVersion: kubelet.config.k8s.io/v1beta1
-  authentication:
-    anonymous:
-      enabled: false
-    webhook:
-      enabled: true
-    x509:
-        clientCAFile: "/root/certificates/ca.crt"
-  authorization:
-    mode: Webhook
-  clusterDomain: "cluster.local"
-  clusterDNS:
-    - "10.32.0.10"
-  runtimeRequestTimeout: "15m"
-  cgroupDriver: systemd
-  EOF
-  ```
 **KubeConfig Creation for kube-proxy:**
 
   ```
   cd /root/certificates
-  SERVER_IP=<ip address of master node>
+  SERVER_IP=<ip address of api server (Master Node IP)>
   {
-    kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=kubelet.kubeconfig
-    kubectl config set-credentials system:node:kube-worker --client-certificate=kubelet.crt --client-key=kubelet.key --embed-certs=true --kubeconfig=kubelet.kubeconfig
-    kubectl config set-context default --cluster=kubernetes-from-scratch --user=system:node:kube-worker --kubeconfig=kubelet.kubeconfig
-    kubectl config use-context default --kubeconfig=kubelet.kubeconfig
+    kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=kube-proxy.kubeconfig
+    kubectl config set-credentials system:kube-proxy --client-certificate=kube-proxy.crt --client-key=kube-proxy.key --embed-certs=true --kubeconfig=kube-proxy.kubeconfig
+    kubectl config set-context default --cluster=kubernetes-from-scratch --user=system:kube-proxy --kubeconfig=kube-proxy.kubeconfig
+    kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
   }
+  ```
+**Generate Kubelet Configuration YAML File:**
+
+  ```
+  cat <<EOF | sudo tee /root/certificates/kube-proxy-config.yaml
+  kind: KubeProxyConfiguration
+  apiVersion: kubeproxy.config.k8s.io/v1alpha1
+  clientConnection:
+    kubeconfig: "/root/certificates/kubeconfig"
+  mode: "iptables"
+  clusterCIDR: "10.200.0.0/16"
+  EOF
   ```
 **Copy kube-proxy Binaries to the Path:**
 
@@ -625,15 +619,13 @@ Set up etcd on master node as the key-value store for the cluster.
 **Configure the systemd File for kube-proxy:**
 
   ```
-  cat <<EOF | sudo tee /etc/systemd/system/kubelet.service
+  cat <<EOF | sudo tee /etc/systemd/system/kube-proxy.service
   [Unit]
-  Description=Kubernetes Kubelet
+  Description=Kubernetes Kube Proxy
   Documentation=https://github.com/kubernetes/kubernetes
-  After=docker.service
-  Requires=docker.service
 
   [Service]
-  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime=remote --kubeconfig=/root/certificates/kubeconfig  --v=2
+  ExecStart=/usr/local/bin/kube-proxy --config=/root/certificates/kube-proxy-config.yaml
   Restart=on-failure
   RestartSec=5
 
