@@ -470,101 +470,101 @@ Set up etcd on master node as the key-value store for the cluster.
    
 ## Configure the kubelet: 
 
-  **What is kubelet?**
+**What is kubelet?**
 
-    Kubelet is a component in a Kubernetes cluster that runs on each node. Its role is to manage the containers running on that node, ensuring that containers are started, healthy, and running as desired. It communicates with the API server to receive information about desired state and to report back on the actual state of containers on the node. The kubelet integrates with the container runtime, such as Docker or rkt, to start and stop containers.
+  Kubelet is a component in a Kubernetes cluster that runs on each node. Its role is to manage the containers running on that node, ensuring that containers are started, healthy, and running as desired. It communicates with the API server to receive information about desired state and to report back on the actual state of containers on the node. The kubelet integrates with the container runtime, such as Docker or rkt, to start and stop containers.
 
-  **Certificate creation for kubelet:**
+**Certificate creation for kubelet:**
 
-    ```
-    SERVER_IP=<worker node ip address>
-    cd /root/certificates
-    openssl genrsa -out kubelet.key 2048
-    {
-    cat > kubelet.cnf <<EOF
-    [req]
-    req_extensions = v3_req
-    distinguished_name = req_distinguished_name
-    [req_distinguished_name]
-    [ v3_req ]
-    basicConstraints = CA:FALSE
-    keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-    subjectAltName = @alt_names
-    [alt_names]
-    DNS.1 = kube-worker
-    IP.1 = ${SERVER_IP}
-    EOF
-    }
-    openssl req -new -key kubelet.key -subj "/CN=system:node:kube-worker/O=system:nodes" -out kubelet.csr -config kubelet.cnf
-    openssl x509 -req -in kubelet.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kubelet.crt -extensions v3_req -extfile kubelet.cnf -days 365
-    rm -f kubelet.csr
-    ```
-  **Generate Kubelet Configuration YAML File:**
-  
-    ```
-    cat <<EOF | sudo tee /root/certificates/kubelet-config.yaml
-    kind: KubeletConfiguration
-    apiVersion: kubelet.config.k8s.io/v1beta1
-    authentication:
-      anonymous:
-        enabled: false
-      webhook:
-        enabled: true
-      x509:
-          clientCAFile: "/root/certificates/ca.crt"
-    authorization:
-      mode: Webhook
-    clusterDomain: "cluster.local"
-    clusterDNS:
-      - "10.32.0.10"
-    runtimeRequestTimeout: "15m"
-    cgroupDriver: systemd
-    EOF
-    ```
-  **KubeConfig Creation for kubelet:**
+  ```
+  SERVER_IP=<worker node ip address>
+  cd /root/certificates
+  openssl genrsa -out kubelet.key 2048
+  {
+  cat > kubelet.cnf <<EOF
+  [req]
+  req_extensions = v3_req
+  distinguished_name = req_distinguished_name
+  [req_distinguished_name]
+  [ v3_req ]
+  basicConstraints = CA:FALSE
+  keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+  subjectAltName = @alt_names
+  [alt_names]
+  DNS.1 = kube-worker
+  IP.1 = ${SERVER_IP}
+  EOF
+  }
+  openssl req -new -key kubelet.key -subj "/CN=system:node:kube-worker/O=system:nodes" -out kubelet.csr -config kubelet.cnf
+  openssl x509 -req -in kubelet.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kubelet.crt -extensions v3_req -extfile kubelet.cnf -days 365
+  rm -f kubelet.csr
+  ```
+**Generate Kubelet Configuration YAML File:**
 
-    ```
-    cd /root/certificates
-    SERVER_IP=<ip address of master node>
-    {
-      kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=kubelet.kubeconfig
-      kubectl config set-credentials system:node:kube-worker --client-certificate=kubelet.crt --client-key=kubelet.key --embed-certs=true --kubeconfig=kubelet.kubeconfig
-      kubectl config set-context default --cluster=kubernetes-from-scratch --user=system:node:kube-worker --kubeconfig=kubelet.kubeconfig
-      kubectl config use-context default --kubeconfig=kubelet.kubeconfig
-    }
-    ```
-  **Copy kubelet Binaries to the Path:**
+  ```
+  cat <<EOF | sudo tee /root/certificates/kubelet-config.yaml
+  kind: KubeletConfiguration
+  apiVersion: kubelet.config.k8s.io/v1beta1
+  authentication:
+    anonymous:
+      enabled: false
+    webhook:
+      enabled: true
+    x509:
+        clientCAFile: "/root/certificates/ca.crt"
+  authorization:
+    mode: Webhook
+  clusterDomain: "cluster.local"
+  clusterDNS:
+    - "10.32.0.10"
+  runtimeRequestTimeout: "15m"
+  cgroupDriver: systemd
+  EOF
+  ```
+**KubeConfig Creation for kubelet:**
 
-    ```
-    cd  /root/binaries/kubernetes/node/bin/
-    cp kubectl kubelet /usr/local/bin
-    ```
-  **Configure the systemd File for kubelet:**
+  ```
+  cd /root/certificates
+  SERVER_IP=<ip address of master node>
+  {
+    kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=kubelet.kubeconfig
+    kubectl config set-credentials system:node:kube-worker --client-certificate=kubelet.crt --client-key=kubelet.key --embed-certs=true --kubeconfig=kubelet.kubeconfig
+    kubectl config set-context default --cluster=kubernetes-from-scratch --user=system:node:kube-worker --kubeconfig=kubelet.kubeconfig
+    kubectl config use-context default --kubeconfig=kubelet.kubeconfig
+  }
+  ```
+**Copy kubelet Binaries to the Path:**
 
-    ```
-    cat <<EOF | sudo tee /etc/systemd/system/kubelet.service
-    [Unit]
-    Description=Kubernetes Kubelet
-    Documentation=https://github.com/kubernetes/kubernetes
-    After=docker.service
-    Requires=docker.service
+  ```
+  cd  /root/binaries/kubernetes/node/bin/
+  cp kubectl kubelet /usr/local/bin
+  ```
+**Configure the systemd File for kubelet:**
 
-    [Service]
-    ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime=docker --kubeconfig=/root/certificates/kubeconfig  --v=2
-    Restart=on-failure
-    RestartSec=5
+  ```
+  cat <<EOF | sudo tee /etc/systemd/system/kubelet.service
+  [Unit]
+  Description=Kubernetes Kubelet
+  Documentation=https://github.com/kubernetes/kubernetes
+  After=docker.service
+  Requires=docker.service
 
-    [Install]
-    WantedBy=multi-user.target
-    EOF
-    ```
-  **Start Service -> kubelet:**
+  [Service]
+  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime=docker --kubeconfig=/root/certificates/kubeconfig  --v=2
+  Restart=on-failure
+  RestartSec=5
 
-    ```
-    systemctl start kubelet
-    systemctl status kubelet
-    systemctl enable kubelet
-    ```
+  [Install]
+  WantedBy=multi-user.target
+  EOF
+  ```
+**Start Service -> kubelet:**
+
+  ```
+  systemctl start kubelet
+  systemctl status kubelet
+  systemctl enable kubelet
+  ```
 
 ## Configure the kube-proxy: 
   
