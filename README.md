@@ -224,7 +224,7 @@ Set up etcd on master node as the key-value store for the cluster.
   }
   openssl genrsa -out kube-api.key 2048
   openssl req -new -key kube-api.key -subj "/CN=kube-apiserver" -out kube-api.csr -config kube-api.conf
-  openssl x509 -req -in kube-api.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-api.crt -extensions v3_req -extfile api.conf -days 365
+  openssl x509 -req -in kube-api.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-api.crt -extensions v3_req -extfile kube-api.conf -days 365
   rm -f kube-api.csr kube-api.conf
   ```
 **Certificate Creation for Service Account:**
