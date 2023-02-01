@@ -425,7 +425,7 @@ Set up etcd on master node as the key-value store for the cluster.
 ## Copying CA key & Certificate
   Before moving to Configuration of worker node we need to copy the ca.crt & ca.key to Worker node from Master node, because we have to generate private keys and certificates for kubelet and kube-proxy using these key & certificate.
   
-  **On Worker Node:
+  **On Worker Node:**
   
   Open file **/etc/ssh/sshd_config** and change the **PasswordAuthentication** to **yes**, then run following script.
   ```
@@ -435,7 +435,7 @@ Set up etcd on master node as the key-value store for the cluster.
   ```
   and enter the passwd for user **'karthik'**
   
-  **On Master Node:
+  **On Master Node:**
   ```
   cd /root/certificates/
   scp ca.crt ca.key karthik@192.168.55.104:/tmp
