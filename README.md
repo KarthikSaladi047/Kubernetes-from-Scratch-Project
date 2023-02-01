@@ -589,8 +589,8 @@ Set up etcd on master node as the key-value store for the cluster.
 **KubeConfig Creation for kube-proxy:**
 
   ```
-  cd /root/certificates
   SERVER_IP=<ip address of api server (Master Node IP)>
+  cd /root/certificates
   {
     kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=kube-proxy.kubeconfig
     kubectl config set-credentials system:kube-proxy --client-certificate=kube-proxy.crt --client-key=kube-proxy.key --embed-certs=true --kubeconfig=kube-proxy.kubeconfig
@@ -598,7 +598,7 @@ Set up etcd on master node as the key-value store for the cluster.
     kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
   }
   ```
-**Generate Kubelet Configuration YAML File:**
+**Generate Kube-proxy Configuration YAML File:**
 
   ```
   cat <<EOF | sudo tee /root/certificates/kube-proxy-config.yaml
