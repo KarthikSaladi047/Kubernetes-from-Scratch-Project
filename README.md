@@ -550,7 +550,7 @@ Set up etcd on master node as the key-value store for the cluster.
   Requires=docker.service
 
   [Service]
-  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime=docker --kubeconfig=/root/certificates/kubeconfig  --v=2
+  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime=remote --kubeconfig=/root/certificates/kubeconfig  --v=2
   Restart=on-failure
   RestartSec=5
 
@@ -568,6 +568,86 @@ Set up etcd on master node as the key-value store for the cluster.
 
 ## Configure the kube-proxy: 
   
+**What is kube-proxy?**
+
+  Kube-proxy is a component in the Kubernetes cluster that provides network connectivity to the pods, services, and endpoints. It acts as a network proxy and load balancer for the services within the cluster. It runs on each node in the cluster and communicates with the API server to program the iptables rules to direct traffic to appropriate pods.
+
+**Certificate creation for kube-proxy:**
+
+  ```
+  cd /root/certificates
+  
+  openssl genrsa -out kube-proxy.key 2048
+  openssl req -new -key kube-proxy.key -subj "/CN=system:kube-proxy" -out kube-proxy.csr
+  openssl x509 -req -in kube-proxy.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-proxy.crt -days 365
+  rm -f kube-proxy.csr
+  ```
+**Generate Kubelet Configuration YAML File:**
+
+  ```
+  cat <<EOF | sudo tee /root/certificates/kubelet-config.yaml
+  kind: KubeletConfiguration
+  apiVersion: kubelet.config.k8s.io/v1beta1
+  authentication:
+    anonymous:
+      enabled: false
+    webhook:
+      enabled: true
+    x509:
+        clientCAFile: "/root/certificates/ca.crt"
+  authorization:
+    mode: Webhook
+  clusterDomain: "cluster.local"
+  clusterDNS:
+    - "10.32.0.10"
+  runtimeRequestTimeout: "15m"
+  cgroupDriver: systemd
+  EOF
+  ```
+**KubeConfig Creation for kube-proxy:**
+
+  ```
+  cd /root/certificates
+  SERVER_IP=<ip address of master node>
+  {
+    kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=kubelet.kubeconfig
+    kubectl config set-credentials system:node:kube-worker --client-certificate=kubelet.crt --client-key=kubelet.key --embed-certs=true --kubeconfig=kubelet.kubeconfig
+    kubectl config set-context default --cluster=kubernetes-from-scratch --user=system:node:kube-worker --kubeconfig=kubelet.kubeconfig
+    kubectl config use-context default --kubeconfig=kubelet.kubeconfig
+  }
+  ```
+**Copy kube-proxy Binaries to the Path:**
+
+  ```
+  cd  /root/binaries/kubernetes/node/bin/
+  cp kubectl kubelet /usr/local/bin
+  ```
+**Configure the systemd File for kube-proxy:**
+
+  ```
+  cat <<EOF | sudo tee /etc/systemd/system/kubelet.service
+  [Unit]
+  Description=Kubernetes Kubelet
+  Documentation=https://github.com/kubernetes/kubernetes
+  After=docker.service
+  Requires=docker.service
+
+  [Service]
+  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime=remote --kubeconfig=/root/certificates/kubeconfig  --v=2
+  Restart=on-failure
+  RestartSec=5
+
+  [Install]
+  WantedBy=multi-user.target
+  EOF
+  ```
+**Start Service -> kube-proxy:**
+
+  ```
+  systemctl start kube-proxy
+  systemctl status kube-proxy
+  systemctl enable kube-proxy
+  ```
 
 ## Join the nodes: -
 - Join each node to the cluster by configuring the kubelet on each node to connect to the API server.
