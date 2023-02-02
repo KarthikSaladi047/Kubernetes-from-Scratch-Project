@@ -554,7 +554,7 @@ Set up etcd on master node as the key-value store for the cluster.
   Requires=docker.service
 
   [Service]
-  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime=remote --kubeconfig=/root/certificates/kubeconfig  --v=2
+  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime=remote --kubeconfig=/root/certificates/kubelet.kubeconfig  --v=2
   Restart=on-failure
   RestartSec=5
 
