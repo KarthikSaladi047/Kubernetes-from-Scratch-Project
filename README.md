@@ -477,7 +477,7 @@ Set up etcd on master node as the key-value store for the cluster.
   apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
   ```
   ```
-  # Run these commands as root
+  git clone https://github.com/Mirantis/cri-dockerd.git
   ###Install GO###
   wget https://storage.googleapis.com/golang/getgo/installer_linux
   chmod +x ./installer_linux
@@ -570,7 +570,7 @@ Set up etcd on master node as the key-value store for the cluster.
 
   ```
   cd  /root/binaries/kubernetes/node/bin/
-  cp kubectl kubelet /usr/local/bin
+  cp kubelet /usr/local/bin
   ```
 **Configure the systemd File for kubelet:**
 
@@ -609,7 +609,6 @@ Set up etcd on master node as the key-value store for the cluster.
 
   ```
   cd /root/certificates
-  
   openssl genrsa -out kube-proxy.key 2048
   openssl req -new -key kube-proxy.key -subj "/CN=system:kube-proxy" -out kube-proxy.csr
   openssl x509 -req -in kube-proxy.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-proxy.crt -days 365
@@ -643,7 +642,7 @@ Set up etcd on master node as the key-value store for the cluster.
 
   ```
   cd  /root/binaries/kubernetes/node/bin/
-  cp kubectl kubelet /usr/local/bin
+  cp kube-proxy /usr/local/bin
   ```
 **Configure the systemd File for kube-proxy:**
 
