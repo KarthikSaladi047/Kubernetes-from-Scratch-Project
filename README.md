@@ -554,7 +554,7 @@ Set up etcd on master node as the key-value store for the cluster.
   Requires=docker.service
 
   [Service]
-  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime=remote --kubeconfig=/root/certificates/kubelet.kubeconfig  --v=2
+  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime-endpoint=unix:///var/run/cri-dockerd.sock --kubeconfig=/root/certificates/kubelet.kubeconfig  --v=2
   Restart=on-failure
   RestartSec=5
 
@@ -592,10 +592,10 @@ Set up etcd on master node as the key-value store for the cluster.
   SERVER_IP=<ip address of api server (Master Node IP)>
   cd /root/certificates
   {
-    kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=kube-proxy.kubeconfig
-    kubectl config set-credentials system:kube-proxy --client-certificate=kube-proxy.crt --client-key=kube-proxy.key --embed-certs=true --kubeconfig=kube-proxy.kubeconfig
-    kubectl config set-context default --cluster=kubernetes-from-scratch --user=system:kube-proxy --kubeconfig=kube-proxy.kubeconfig
-    kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
+  kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=kube-proxy.kubeconfig
+  kubectl config set-credentials system:kube-proxy --client-certificate=kube-proxy.crt --client-key=kube-proxy.key --embed-certs=true --kubeconfig=kube-proxy.kubeconfig
+  kubectl config set-context default --cluster=kubernetes-from-scratch --user=system:kube-proxy --kubeconfig=kube-proxy.kubeconfig
+  kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
   }
   ```
 **Generate Kube-proxy Configuration YAML File:**
