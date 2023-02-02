@@ -605,7 +605,7 @@ Set up etcd on master node as the key-value store for the cluster.
   kind: KubeProxyConfiguration
   apiVersion: kubeproxy.config.k8s.io/v1alpha1
   clientConnection:
-    kubeconfig: "/root/certificates/kubeconfig"
+    kubeconfig: "/root/certificates/kube-proxy.kubeconfig"
   mode: "iptables"
   clusterCIDR: "10.200.0.0/16"
   EOF
