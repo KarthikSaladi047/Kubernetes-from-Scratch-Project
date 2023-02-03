@@ -672,8 +672,33 @@ Set up etcd on master node as the key-value store for the cluster.
 ## Join the nodes: -
 - Join each node to the cluster by configuring the kubelet on each node to connect to the API server.
 
-## Verify the cluster: 
+## Verify the cluster:
+
 - Verify that all nodes are healthy and that the components are running and communicating as expected.
+
+  **Create certificate for Admin User:**
+  ```
+  cd /root/certificates
+  openssl genrsa -out admin.key 2048
+  openssl req -new -key admin.key -subj "/CN=admin/O=system:masters" -out admin.csr
+  openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out admin.crt -days 1000
+  rm -f admin.csr
+  ```
+  **Create KubeConfig File:**
+  ```
+  {
+    kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=admin.kubeconfig
+    kubectl config set-credentials admin --client-certificate=admin.crt --client-key=admin.key --embed-certs=true --kubeconfig=admin.kubeconfig
+    kubectl config set-context default --cluster=kubernetes-from-scratch --user=admin --kubeconfig=admin.kubeconfig
+    kubectl config use-context default --kubeconfig=admin.kubeconfig
+  }
+  ```
+  **Verify Cluster Status**
+  ```
+  kubectl get componentstatuses --kubeconfig=admin.kubeconfig
+  cp /root/certificates/admin.kubeconfig ~/.kube/config
+  kubectl get componentstatuses
+  ```
 
 ## Deploy network add-ons: 
 - Deploy network add-ons, such as a network overlay, to enable communication between pods.
