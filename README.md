@@ -524,7 +524,7 @@ Set up etcd on master node as the key-value store for the cluster.
   IP.1 = ${SERVER_IP}
   EOF
   }
-  openssl req -new -key kubelet.key -subj "/CN=system:node:kube-worker/O=system:nodes" -out kubelet.csr -config kubelet.cnf
+  openssl req -new -key kubelet.key -subj "/CN=system:kubelet" -out kubelet.csr -config kubelet.cnf
   openssl x509 -req -in kubelet.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kubelet.crt -extensions v3_req -extfile kubelet.cnf -days 365
   rm -f kubelet.csr
   ```
