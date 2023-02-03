@@ -668,7 +668,7 @@ Set up etcd on master node as the key-value store for the cluster.
   systemctl status kube-proxy
   systemctl enable kube-proxy
   ```
-
+---
 ## Join the nodes: -
 - Join each node to the cluster by configuring the kubelet on each node to connect to the API server.
 
@@ -677,6 +677,9 @@ Set up etcd on master node as the key-value store for the cluster.
 - Verify that all nodes are healthy and that the components are running and communicating as expected.
 
 **Create certificate for Admin User:**
+
+  All the folllowing steps on Master Node
+  
   ```
   cd /root/certificates
   openssl genrsa -out admin.key 2048
@@ -684,7 +687,7 @@ Set up etcd on master node as the key-value store for the cluster.
   openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out admin.crt -days 1000
   rm -f admin.csr
   ```
-**Create KubeConfig File:**
+**Create KubeConfig File for Admin:**
   ```
   {
     kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=admin.kubeconfig
@@ -693,7 +696,7 @@ Set up etcd on master node as the key-value store for the cluster.
     kubectl config use-context default --kubeconfig=admin.kubeconfig
   }
   ```
-**Verify Cluster Status**
+**Verify Cluster Status:**
   ```
   kubectl get componentstatuses --kubeconfig=admin.kubeconfig
   cp /root/certificates/admin.kubeconfig ~/.kube/config
