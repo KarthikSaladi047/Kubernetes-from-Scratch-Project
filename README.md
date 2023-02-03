@@ -676,9 +676,9 @@ Set up etcd on master node as the key-value store for the cluster.
 
 - Verify that all nodes are healthy and that the components are running and communicating as expected.
 
-**Create certificate for Admin User:**
-
   All the folllowing steps on Master Node
+
+**Create certificate for Admin User:**
   
   ```
   cd /root/certificates
