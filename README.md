@@ -579,8 +579,8 @@ Set up etcd on master node as the key-value store for the cluster.
   [Unit]
   Description=Kubernetes Kubelet
   Documentation=https://github.com/kubernetes/kubernetes
-  After=docker.service
-  Requires=docker.service
+  After=cri-docker.service
+  Requires=cri-docker.service
 
   [Service]
   ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime-endpoint=unix:///var/run/cri-dockerd.sock --kubeconfig=/root/certificates/kubelet.kubeconfig  --v=2
