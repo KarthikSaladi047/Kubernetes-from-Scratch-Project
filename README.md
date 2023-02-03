@@ -422,6 +422,35 @@ Set up etcd on master node as the key-value store for the cluster.
   systemctl status kube-scheduler
   systemctl enable kube-scheduler
   ```
+## Verify the cluster:
+
+- Verify that all nodes are healthy and that the components are running and communicating as expected.
+
+**Create certificate for Admin User:**
+  
+  ```
+  cd /root/certificates
+  openssl genrsa -out admin.key 2048
+  openssl req -new -key admin.key -subj "/CN=admin/O=system:masters" -out admin.csr
+  openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out admin.crt -days 1000
+  rm -f admin.csr
+  ```
+**Create KubeConfig File for Admin:**
+
+  ```
+  {
+  kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=admin.kubeconfig
+  kubectl config set-credentials admin --client-certificate=admin.crt --client-key=admin.key --embed-certs=true --kubeconfig=admin.kubeconfig
+  kubectl config set-context default --cluster=kubernetes-from-scratch --user=admin --kubeconfig=admin.kubeconfig
+  kubectl config use-context default --kubeconfig=admin.kubeconfig
+  }
+  ```
+**Verify Cluster Status:**
+
+  ```
+  cp /root/certificates/admin.kubeconfig ~/.kube/config
+  kubectl get componentstatuses
+  ```
 ## Copying CA key & Certificate
   Before moving to Configuration of worker node we need to copy the ca.crt & ca.key to Worker node from Master node, because we have to generate private keys and certificates for kubelet and kube-proxy using these key & certificate.
   
@@ -465,36 +494,39 @@ Set up etcd on master node as the key-value store for the cluster.
   wget https://dl.k8s.io/v1.24.10/kubernetes-node-linux-amd64.tar.gz
   tar -xzvf kubernetes-node-linux-amd64.tar.gz
   ```
-## Configure Container Runtime (Docker)
-   
+## Configure Container Runtime (Containerd)
+  
+  Pre-Requisites:
+  
   ```
-  apt-get update
-  apt-get install ca-certificates curl gnupg lsb-release
-  mkdir -p /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-  apt-get update
-  apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+  apt install -y socat conntrack ipset
+  sysctl -w net.ipv4.conf.all.forwarding=1
+  cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+  net.bridge.bridge-nf-call-iptables  = 1
+  net.ipv4.ip_forward                 = 1
+  net.bridge.bridge-nf-call-ip6tables = 1
+  EOF
+  cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+  net.bridge.bridge-nf-call-ip6tables = 1
+  net.bridge.bridge-nf-call-iptables = 1
+  EOF
+  sysctl --system
   ```
+  Install and configure Containerd:
+  
   ```
-  git clone https://github.com/Mirantis/cri-dockerd.git
-  ###Install GO###
-  wget https://storage.googleapis.com/golang/getgo/installer_linux
-  chmod +x ./installer_linux
-  ./installer_linux
-  source ~/.bash_profile
-
-  cd cri-dockerd
-  mkdir bin
-  go build -o bin/cri-dockerd
-  mkdir -p /usr/local/bin
-  install -o root -g root -m 0755 bin/cri-dockerd /usr/local/bin/cri-dockerd
-  cp -a packaging/systemd/* /etc/systemd/system
-  sed -i -e 's,/usr/bin/cri-dockerd,/usr/local/bin/cri-dockerd,' /etc/systemd/system/cri-docker.service
-  systemctl daemon-reload
-  systemctl enable cri-docker.service
-  systemctl enable --now cri-docker.socket
-  systemctl start cri-docker.service
+  cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
+  overlay
+  br_netfilter
+  EOF
+  modprobe overlay
+  modprobe br_netfilter
+  apt-get install -y containerd
+  mkdir -p /etc/containerd
+  containerd config default > /etc/containerd/config.toml
+  vim /etc/containerd/config.toml
+  #change "SystemdCgroup = true"
+  systemctl restart containerd
   ```
    
 ## Configure the kubelet: 
@@ -524,7 +556,7 @@ Set up etcd on master node as the key-value store for the cluster.
   IP.1 = ${SERVER_IP}
   EOF
   }
-  openssl req -new -key kubelet.key -subj "/CN=system:kubelet" -out kubelet.csr -config kubelet.cnf
+  openssl req -new -key kubelet.key -subj "/CN=system:node:kube-worker/O=system:nodes" -out kubelet.csr -config kubelet.cnf
   openssl x509 -req -in kubelet.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kubelet.crt -extensions v3_req -extfile kubelet.cnf -days 365
   rm -f kubelet.csr
   ```
@@ -579,11 +611,11 @@ Set up etcd on master node as the key-value store for the cluster.
   [Unit]
   Description=Kubernetes Kubelet
   Documentation=https://github.com/kubernetes/kubernetes
-  After=cri-docker.service
-  Requires=cri-docker.service
+  After=containerd.service
+  Requires=containerd.service
 
   [Service]
-  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime-endpoint=unix:///var/run/cri-dockerd.sock --kubeconfig=/root/certificates/kubelet.kubeconfig  --v=2
+  ExecStart=/usr/local/bin/kubelet --config=/root/certificates/kubelet-config.yaml --container-runtime-endpoint=unix:///var/run/containerd/containerd.sock --kubeconfig=/root/certificates/kubelet.kubeconfig  --v=2
   Restart=on-failure
   RestartSec=5
 
@@ -671,37 +703,6 @@ Set up etcd on master node as the key-value store for the cluster.
 ---
 ## Join the nodes: -
 - Join each node to the cluster by configuring the kubelet on each node to connect to the API server.
-
-## Verify the cluster:
-
-- Verify that all nodes are healthy and that the components are running and communicating as expected.
-
-  All the folllowing steps on Master Node
-
-**Create certificate for Admin User:**
-  
-  ```
-  cd /root/certificates
-  openssl genrsa -out admin.key 2048
-  openssl req -new -key admin.key -subj "/CN=admin/O=system:masters" -out admin.csr
-  openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out admin.crt -days 1000
-  rm -f admin.csr
-  ```
-**Create KubeConfig File for Admin:**
-  ```
-  {
-    kubectl config set-cluster kubernetes-from-scratch --certificate-authority=ca.crt --embed-certs=true --server=https://${SERVER_IP}:6443 --kubeconfig=admin.kubeconfig
-    kubectl config set-credentials admin --client-certificate=admin.crt --client-key=admin.key --embed-certs=true --kubeconfig=admin.kubeconfig
-    kubectl config set-context default --cluster=kubernetes-from-scratch --user=admin --kubeconfig=admin.kubeconfig
-    kubectl config use-context default --kubeconfig=admin.kubeconfig
-  }
-  ```
-**Verify Cluster Status:**
-  ```
-  kubectl get componentstatuses --kubeconfig=admin.kubeconfig
-  cp /root/certificates/admin.kubeconfig ~/.kube/config
-  kubectl get componentstatuses
-  ```
 
 ## Deploy network add-ons: 
 - Deploy network add-ons, such as a network overlay, to enable communication between pods.
