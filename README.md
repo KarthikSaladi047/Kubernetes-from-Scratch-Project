@@ -1,4 +1,4 @@
-# Kubernetes-from-Scratch-Project <img src="https://www.pngfind.com/pngs/m/487-4870857_kubernetes-logo-kubernetes-png-transparent-png.png" title="kubernetes" alt="kubernetes" width="40" height="40"/>&nbsp;
+# Kubernetes-from-Scratch-Project <img src="https://cdn2.iconfinder.com/data/icons/mixd/512/16_kubernetes-512.png" title="kubernetes" alt="kubernetes" width="40" height="40"/>&nbsp;
 Configuration of Kubernetes Cluster from Scratch
 
 Note: Currently working on this project
