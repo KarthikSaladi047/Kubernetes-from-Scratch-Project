@@ -1,7 +1,5 @@
-# Kubernetes-from-Scratch-Project <img src="https://cdn2.iconfinder.com/data/icons/mixd/512/16_kubernetes-512.png" title="kubernetes" alt="kubernetes" width="40" height="40"/>&nbsp;
-Configuration of Kubernetes Cluster from Scratch
-
-Note: Currently working on this project
+# Kubernetes-from-Scratch-Project <img src="https://www.rackspace.com/sites/default/files/2021-04/kubernetes-logo.png" title="kubernetes" alt="kubernetes" width="40" height="40"/>
+**Project Description:** Configuration of Kubernetes Cluster from Scratch
 
 ## What is Kubernetes?
 
@@ -11,7 +9,8 @@ Kubernetes is built on the concept of a cluster, which is a set of nodes running
 
 Kubernetes provides features such as self-healing, automatic scaling, and rollback and rollouts, making it an ideal platform for running large-scale, highly available applications. It also integrates with a wide range of tools and services, such as monitoring, logging, and CI/CD systems, making it a popular choice for managing cloud-native applications.
 
-![Untitled design](https://user-images.githubusercontent.com/105864615/215563455-bc448818-7ff8-49ce-9c39-4cf4bbc2d7f1.jpg)
+![orcastrator](https://user-images.githubusercontent.com/105864615/221418614-eab72f3a-b9a7-425d-ab05-f77dc0760954.png)
+
 Key Features of Kubernetes are:
 
 - Automated rollouts and rollbacks
@@ -31,17 +30,14 @@ Official Kubernetes Documentation: https://kubernetes.io/
 Kubernetes GitHub: https://github.com/kubernetes/kubernetes
 
 ## Kubernetes Cluster Architecture
-
-![kube cluster](https://user-images.githubusercontent.com/105864615/215555315-303fb360-360d-40e0-9bcd-0f81cd0c8e94.jpg)
+![kube cluster](https://user-images.githubusercontent.com/105864615/221418204-3fbe4538-4cdd-4c37-9641-79631ddfc202.jpg)
 
 👑 The Master Node components make global decisions about the cluster, as well as detecting and responding to cluster events. These components can be run on any machine in the cluster. However, for simplicity, set up scripts typically start all control plane components on the same machine, and do not run user containers on this machine.
 
 👷 A Kubernetes cluster consists of a set of worker machines, called nodes, that run containerized applications. Every cluster has at least one worker node. The worker node(s) host the Pods that are the components of the application workload. The control plane manages the worker nodes and the Pods in the cluster.
 
 ## Set up the nodes: 
-- Choose and set up the servers we will use as nodes in our cluster.
-
-  In this project I am using a Ubuntu 22.04 vm for Master and Worker Node each. Let the hostname of Master node is "kube-master" and Worker node is "kube-worker".
+- In this project I am using a Ubuntu 22.04 vm for Master and Worker Node each. Let the hostname of Master node is "kube-master" and Worker node is "kube-worker".
 
   **VM Hardware Requirements:**
     <table>
@@ -68,9 +64,6 @@ Kubernetes GitHub: https://github.com/kubernetes/kubernetes
         </tr>
       </tbody>
     </table>
-
-## Install dependencies: 
-- Install the required dependencies on each node, including Docker and other packages needed by kubernetes components.
 ---
 <h1>Master Node Configuration</h1>
 
@@ -496,10 +489,10 @@ Set up etcd on master node as the key-value store for the cluster.
   ```
 ## Configure Container Runtime (Containerd)
   
-  Pre-Requisites:
-  
-**Load the kernel modules**
-  
+Pre-Requisites:
+
+- Load the kernel modules
+
   The "overlay" kernel module is required for using the overlay filesystem, which is commonly used in container environments for efficient storage management. The "br_netfilter" module is required for enabling bridge netfilter functionality, which allows for more granular control over network traffic between containers.
   ```
   cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
@@ -509,14 +502,14 @@ Set up etcd on master node as the key-value store for the cluster.
   modprobe overlay
   modprobe br_netfilter
   ```
-**Setting kernel parameters related to networking**
-  
+- Setting kernel parameters related to networking
+
   - net.bridge.bridge-nf-call-iptables = 1 - This enables bridge-nf-call-iptables, which allows iptables to process packets traversing bridged network interfaces. This is required for Kubernetes networking to work correctly.
 
   - net.ipv4.ip_forward = 1 - This enables IP forwarding, which allows packets to be forwarded between network interfaces. This is also required for Kubernetes networking to work correctly.
 
   - net.bridge.bridge-nf-call-ip6tables = 1 - This enables bridge-nf-call-ip6tables, which allows ip6tables to process packets traversing bridged network interfaces.
-  
+
   ```
   cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
   net.bridge.bridge-nf-call-iptables  = 1
@@ -529,7 +522,7 @@ Set up etcd on master node as the key-value store for the cluster.
   - net.bridge.bridge-nf-call-ip6tables = 1 - This enables bridge-nf-call-ip6tables, which allows IPv6 packets to be processed by iptables when they are traversing bridged network interfaces.
 
   - net.bridge.bridge-nf-call-iptables = 1 - This enables bridge-nf-call-iptables, which allows IPv4 packets to be processed by iptables when they are traversing bridged network interfaces.
-  
+
   ```
   cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
   net.bridge.bridge-nf-call-ip6tables = 1
@@ -537,19 +530,19 @@ Set up etcd on master node as the key-value store for the cluster.
   EOF
   sysctl --system
   ```
-**Installing other required packages**
-  ```
-  apt install -y socat conntrack ipset
-  ```
-  ```
-  sysctl -w net.ipv4.conf.all.forwarding=1
-  ```
-  ```
-  apt install net-tools
-  ```
-  
-  Install and configure Containerd:
-  
+ - Installing other required packages
+    ```
+    apt install -y socat conntrack ipset
+    ```
+    ```
+    sysctl -w net.ipv4.conf.all.forwarding=1
+    ```
+    ```
+    apt install net-tools
+    ```
+
+Install and configure Containerd:
+
   ```
   apt-get install -y containerd
   ```
@@ -736,6 +729,15 @@ Set up etcd on master node as the key-value store for the cluster.
   systemctl enable kube-proxy
   systemctl status kube-proxy
   ```
+## Troubleshooting 
+
+  If anything goes wrong, such as cluster component is not working , we need to look into logs of that particular component.
+  
+  ```
+  journalctl -u <Service-Name>
+  ```
+  This will really help in finding root cause of the issue.
+  
 ---
 
 ## Deploy network add-ons: 
@@ -832,4 +834,7 @@ Now restart Kubelet, so that we will see the status of node is Ready.
   Once again, thank you for your time and interest in this project. We wish you all the best in your future endeavors.
 
   Best regards,
-  **Karthik Saladi
+  **Karthik Saladi**
+  
+  ![2021-10-10_16-20-20-8bd9e11866600964acce5420f99c86cf](https://user-images.githubusercontent.com/105864615/221418915-b8267ebd-5ba2-457c-af37-2828170373a0.jpg)
+
