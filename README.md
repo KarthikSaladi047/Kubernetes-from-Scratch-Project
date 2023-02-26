@@ -188,8 +188,8 @@ Set up etcd on master node as the key-value store for the cluster.
   
   ```
   systemctl start etcd
-  systemctl status etcd
   systemctl enable etcd
+  systemctl status etcd
   ```
 ## Configure the API server:
 
@@ -288,8 +288,8 @@ Set up etcd on master node as the key-value store for the cluster.
   
   ```
   systemctl start kube-apiserver
-  systemctl status kube-apiserver
   systemctl enable kube-apiserver
+  systemctl status kube-apiserver
   ```
 ## Configure the controller manager:
 
@@ -356,8 +356,8 @@ Set up etcd on master node as the key-value store for the cluster.
   
   ```
   systemctl start kube-controller-manager
-  systemctl status kube-controller-manager
   systemctl enable kube-controller-manager
+  systemctl status kube-controller-manager
   ```
 
 ## Configure the scheduler: 
@@ -419,8 +419,8 @@ Set up etcd on master node as the key-value store for the cluster.
   
   ```
   systemctl start kube-scheduler
-  systemctl status kube-scheduler
   systemctl enable kube-scheduler
+  systemctl status kube-scheduler
   ```
 ## Verify the cluster:
 
@@ -499,36 +499,54 @@ Set up etcd on master node as the key-value store for the cluster.
   Pre-Requisites:
   
   ```
-  apt install -y socat conntrack ipset
-  sysctl -w net.ipv4.conf.all.forwarding=1
-  cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
-  net.bridge.bridge-nf-call-iptables  = 1
-  net.ipv4.ip_forward                 = 1
-  net.bridge.bridge-nf-call-ip6tables = 1
-  EOF
-  cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-  net.bridge.bridge-nf-call-ip6tables = 1
-  net.bridge.bridge-nf-call-iptables = 1
-  EOF
-  sysctl --system
-  ```
-  Install and configure Containerd:
-  
-  ```
   cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
   overlay
   br_netfilter
   EOF
   modprobe overlay
   modprobe br_netfilter
+  ```
+  
+  ```
+  cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+  net.bridge.bridge-nf-call-iptables  = 1
+  net.ipv4.ip_forward                 = 1
+  net.bridge.bridge-nf-call-ip6tables = 1
+  EOF
+  sysctl --system
+  ```
+  ```
+  cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+  net.bridge.bridge-nf-call-ip6tables = 1
+  net.bridge.bridge-nf-call-iptables = 1
+  EOF
+  sysctl --system
+  ```
+  
+  ```
+  apt install -y socat conntrack ipset
+  ```
+  ```
+  sysctl -w net.ipv4.conf.all.forwarding=1
+  ```
+  
+  Install and configure Containerd:
+  
+  ```
   apt-get install -y containerd
+  ```
+  ```
   mkdir -p /etc/containerd
   containerd config default > /etc/containerd/config.toml
+  ```
+  ```
   vim /etc/containerd/config.toml
-  #change "SystemdCgroup = true"
+  ```
+  change "SystemdCgroup = false to true"
+  ```
   systemctl restart containerd
   ```
-   
+
 ## Configure the kubelet: 
 
 **What is kubelet?**
@@ -627,8 +645,8 @@ Set up etcd on master node as the key-value store for the cluster.
 
   ```
   systemctl start kubelet
-  systemctl status kubelet
   systemctl enable kubelet
+  systemctl status kubelet
   ```
 
 ## Configure the kube-proxy: 
@@ -697,15 +715,31 @@ Set up etcd on master node as the key-value store for the cluster.
 
   ```
   systemctl start kube-proxy
-  systemctl status kube-proxy
   systemctl enable kube-proxy
+  systemctl status kube-proxy
   ```
 ---
 ## Join the nodes: -
 - Join each node to the cluster by configuring the kubelet on each node to connect to the API server.
 
 ## Deploy network add-ons: 
-- Deploy network add-ons, such as a network overlay, to enable communication between pods.
+- On kube-worker
+
+  - Download and configure CNI plugins
+  ```
+  cd /tmp
+  wget https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz
+  mkdir -p /etc/cni/net.d /opt/cni/bin /var/run/kubernetes
+  mv cni-plugins-linux-amd64-v1.1.1.tgz /opt/cni/bin
+  cd /opt/cni/bin
+  tar -xzvf cni-plugins-linux-amd64-v1.1.1.tgz
+  ```
+- On kube-master
+
+  - Configuring Weave(Running a Daemonset)
+  ```
+  kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s-1.11.yaml
+  ```
 
 ## Deploy applications: 
 - Deploy your desired applications to the cluster, using manifests or a continuous delivery pipeline.
