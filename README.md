@@ -761,7 +761,7 @@ Set up etcd on master node as the key-value store for the cluster.
     ```
   - Installing nslookup utility
     ```
-    yum -y install bind-utils
+    apt  install dnsutils
     nslookup kube-worker
     ```
 Now restart Kubelet, so that we will see the status of node is Ready.
@@ -821,3 +821,15 @@ Now restart Kubelet, so that we will see the status of node is Ready.
    ```
    kubectl exec -it busybox -- sh
    ```
+## Thank You:
+
+  Thank you for taking the time to read through this documentation for the "Kubernetes from Scratch" project. I hope you found it informative and helpful in understanding the steps required to set up a Kubernetes cluster from scratch.
+
+  Building a Kubernetes cluster can be a challenging task, but I believe that with this detailed instructions and explanations, you can successfully set up your own cluster and take advantage of the many benefits that Kubernetes offers.
+
+  I really love working with Kubernetes and I hope that this project has helped you in your Kubernetes journey.
+
+  Once again, thank you for your time and interest in this project. We wish you all the best in your future endeavors.
+
+  Best regards,
+  **Karthik Saladi
