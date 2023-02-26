@@ -831,7 +831,7 @@ Now restart Kubelet, so that we will see the status of node is Ready.
 
   I really love working with Kubernetes and I hope that this project has helped you in your Kubernetes journey.
 
-  Once again, thank you for your time and interest in this project. We wish you all the best in your future endeavors.
+  Once again, thank you for your time and interest in this project. I wish you all the best in your future endeavors.
 
   Best regards,
   **Karthik Saladi**
