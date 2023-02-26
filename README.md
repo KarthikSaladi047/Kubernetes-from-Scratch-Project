@@ -276,7 +276,7 @@ Set up etcd on master node as the key-value store for the cluster.
   Documentation=https://github.com/kubernetes/kubernetes
 
   [Service]
-  ExecStart=/usr/local/bin/kube-apiserver --advertise-address=${SERVER_IP} --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/root/certificates/ca.crt --enable-admission-plugins=NamespaceLifecycle,NodeRestriction,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota --enable-bootstrap-token-auth=true --etcd-cafile=/root/certificates/ca.crt --etcd-certfile=/root/certificates/etcd.crt --etcd-keyfile=/root/certificates/etcd.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/root/certificates/kube-api.crt --kubelet-client-key=/root/certificates/kube-api.key --service-account-key-file=/root/certificates/service-account.crt --service-cluster-ip-range=10.32.0.0/24 --tls-cert-file=/root/certificates/kube-api.crt --tls-private-key-file=/root/certificates/kube-api.key --requestheader-client-ca-file=/root/certificates/ca.crt --service-node-port-range=30000-32767 --audit-log-maxage=30 --audit-log-maxbackup=3 --audit-log-maxsize=100 --audit-log-path=/var/log/kube-api-audit.log --bind-address=0.0.0.0 --event-ttl=1h --service-account-key-file=/root/certificates/service-account.crt --service-account-signing-key-file=/root/certificates/service-account.key --service-account-issuer=https://${SERVER_IP}:6443 --encryption-provider-config=/root/certificates/encryption-at-rest.yaml --v=2
+  ExecStart=/usr/local/bin/kube-apiserver --advertise-address=${SERVER_IP} --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/root/certificates/ca.crt --enable-admission-plugins=NamespaceLifecycle,NodeRestriction,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota --enable-bootstrap-token-auth=true --etcd-cafile=/root/certificates/ca.crt --etcd-certfile=/root/certificates/etcd.crt --etcd-keyfile=/root/certificates/etcd.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/root/certificates/kube-api.crt --kubelet-client-key=/root/certificates/kube-api.key --service-account-key-file=/root/certificates/service-account.crt --service-cluster-ip-range=10.32.0.0/24 --tls-cert-file=/root/certificates/kube-api.crt --tls-private-key-file=/root/certificates/kube-api.key --requestheader-client-ca-file=/root/certificates/ca.crt --service-node-port-range=30000-32767 --audit-log-maxage=30 --audit-log-maxbackup=3 --audit-log-maxsize=100 --audit-log-path=/var/log/kube-api-audit.log --bind-address=0.0.0.0 --event-ttl=1h --service-account-key-file=/root/certificates/service-account.crt --service-account-signing-key-file=/root/certificates/service-account.key --service-account-issuer=https://${SERVER_IP}:6443 --encryption-provider-config=/root/certificates/encryption-at-rest.yaml --v=2 --kubelet-preferred-address-types InternalIP
   Restart=on-failure
   RestartSec=5
 
@@ -456,7 +456,7 @@ Set up etcd on master node as the key-value store for the cluster.
   
   **On Worker Node:**
   
-  Open file **/etc/ssh/sshd_config** and change the **PasswordAuthentication** to **yes**, then run following script.
+  Open file **/etc/ssh/sshd_config** and change the **PasswordAuthentication** to **yes**, then run following commands.
   ```
   systemctl restart sshd
   useradd karthik
@@ -467,7 +467,7 @@ Set up etcd on master node as the key-value store for the cluster.
   **On Master Node:**
   ```
   cd /root/certificates/
-  scp ca.crt ca.key karthik@192.168.55.104:/tmp
+  scp ca.crt ca.key karthik@<WORKER_NODE_IP>:/tmp
   ```
   
 ---
@@ -498,6 +498,9 @@ Set up etcd on master node as the key-value store for the cluster.
   
   Pre-Requisites:
   
+**Load the kernel modules**
+  
+  The "overlay" kernel module is required for using the overlay filesystem, which is commonly used in container environments for efficient storage management. The "br_netfilter" module is required for enabling bridge netfilter functionality, which allows for more granular control over network traffic between containers.
   ```
   cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
   overlay
@@ -506,6 +509,13 @@ Set up etcd on master node as the key-value store for the cluster.
   modprobe overlay
   modprobe br_netfilter
   ```
+**Setting kernel parameters related to networking**
+  
+  - net.bridge.bridge-nf-call-iptables = 1 - This enables bridge-nf-call-iptables, which allows iptables to process packets traversing bridged network interfaces. This is required for Kubernetes networking to work correctly.
+
+  - net.ipv4.ip_forward = 1 - This enables IP forwarding, which allows packets to be forwarded between network interfaces. This is also required for Kubernetes networking to work correctly.
+
+  - net.bridge.bridge-nf-call-ip6tables = 1 - This enables bridge-nf-call-ip6tables, which allows ip6tables to process packets traversing bridged network interfaces.
   
   ```
   cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
@@ -515,6 +525,11 @@ Set up etcd on master node as the key-value store for the cluster.
   EOF
   sysctl --system
   ```
+
+  - net.bridge.bridge-nf-call-ip6tables = 1 - This enables bridge-nf-call-ip6tables, which allows IPv6 packets to be processed by iptables when they are traversing bridged network interfaces.
+
+  - net.bridge.bridge-nf-call-iptables = 1 - This enables bridge-nf-call-iptables, which allows IPv4 packets to be processed by iptables when they are traversing bridged network interfaces.
+  
   ```
   cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
   net.bridge.bridge-nf-call-ip6tables = 1
@@ -522,7 +537,7 @@ Set up etcd on master node as the key-value store for the cluster.
   EOF
   sysctl --system
   ```
-  
+**Installing other required packages**
   ```
   apt install -y socat conntrack ipset
   ```
@@ -545,7 +560,7 @@ Set up etcd on master node as the key-value store for the cluster.
   ```
   vim /etc/containerd/config.toml
   ```
-  change "SystemdCgroup = false to true"
+  - change "SystemdCgroup = false to true"
   ```
   systemctl restart containerd
   ```
@@ -744,11 +759,16 @@ Set up etcd on master node as the key-value store for the cluster.
     ```
     kubectl apply -f https://raw.githubusercontent.com/zealvora/certified-kubernetes-administrator/master/Domain%206%20-%20Cluster%20Architecture%2C%20Installation%20%26%20Configuration/coredns.yaml
     ```
+  - Installing nslookup utility
+    ```
+    yum -y install bind-utils
+    nslookup kube-worker
+    ```
 Now restart Kubelet, so that we will see the status of node is Ready.
  ```
  systemctl restart kubelet
  ```
-## kube-apiserver -- Kubelet RBAC
+## kube-apiserver to Kubelet RBAC
   ```
   cat <<EOF | kubectl apply -f -
   apiVersion: rbac.authorization.k8s.io/v1
@@ -791,4 +811,13 @@ Now restart Kubelet, so that we will see the status of node is Ready.
   ```
 
 ## Deploy applications: 
-- Deploy your desired applications to the cluster, using manifests or a continuous delivery pipeline.
+  
+   Now our Kubernetes cluster ready and we can deploy any containerized appliction on it.
+   
+   ```
+   kubectl run busybox --image=busybox:1.28 --command -- sleep 3600
+   kubectl get pods
+   ```
+   ```
+   kubectl exec -it busybox -- sh
+   ```
