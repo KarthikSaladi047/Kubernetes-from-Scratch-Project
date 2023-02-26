@@ -529,6 +529,9 @@ Set up etcd on master node as the key-value store for the cluster.
   ```
   sysctl -w net.ipv4.conf.all.forwarding=1
   ```
+  ```
+  apt install net-tools
+  ```
   
   Install and configure Containerd:
   
@@ -719,26 +722,72 @@ Set up etcd on master node as the key-value store for the cluster.
   systemctl status kube-proxy
   ```
 ---
-## Join the nodes: -
-- Join each node to the cluster by configuring the kubelet on each node to connect to the API server.
 
 ## Deploy network add-ons: 
 - On kube-worker
 
-  - Download and configure CNI plugins
-  ```
-  cd /tmp
-  wget https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz
-  mkdir -p /etc/cni/net.d /opt/cni/bin /var/run/kubernetes
-  mv cni-plugins-linux-amd64-v1.1.1.tgz /opt/cni/bin
-  cd /opt/cni/bin
-  tar -xzvf cni-plugins-linux-amd64-v1.1.1.tgz
-  ```
+  - Download and configure CNI plugins:
+    ```
+    mkdir -p /etc/cni/net.d /opt/cni/bin 
+    mv cni-plugins-linux-amd64-v1.1.1.tgz /opt/cni/bin
+    cd /opt/cni/bin
+    wget https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz
+    tar -xzvf cni-plugins-linux-amd64-v1.1.1.tgz
+    ```
 - On kube-master
 
-  - Configuring Weave(Running a Daemonset)
+  - Configuring Weave(Running a Daemonset):
+    ```
+    kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s-1.11.yaml
+    ```
+  - Install CoreDNS:
+    ```
+    kubectl apply -f https://raw.githubusercontent.com/zealvora/certified-kubernetes-administrator/master/Domain%206%20-%20Cluster%20Architecture%2C%20Installation%20%26%20Configuration/coredns.yaml
+    ```
+Now restart Kubelet, so that we will see the status of node is Ready.
+ ```
+ systemctl restart kubelet
+ ```
+## kube-apiserver -- Kubelet RBAC
   ```
-  kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s-1.11.yaml
+  cat <<EOF | kubectl apply -f -
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    annotations:
+      rbac.authorization.kubernetes.io/autoupdate: "true"
+    labels:
+      kubernetes.io/bootstrapping: rbac-defaults
+    name: system:kube-apiserver-to-kubelet
+  rules:
+    - apiGroups:
+        - ""
+      resources:
+        - nodes/proxy
+        - nodes/stats
+        - nodes/log
+        - nodes/spec
+        - nodes/metrics
+      verbs:
+        - "*"
+  EOF
+  ```
+  ```
+  cat <<EOF | kubectl apply -f -
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    name: system:kube-apiserver
+    namespace: ""
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: system:kube-apiserver-to-kubelet
+  subjects:
+    - apiGroup: rbac.authorization.k8s.io
+      kind: User
+      name: kube-apiserver
+  EOF
   ```
 
 ## Deploy applications: 
