@@ -745,11 +745,10 @@ Install and configure Containerd:
 
   - Download and configure CNI plugins:
     ```
-    mkdir -p /etc/cni/net.d /opt/cni/bin 
-    mv cni-plugins-linux-amd64-v1.1.1.tgz /opt/cni/bin
+    mkdir -p /etc/cni/net.d /opt/cni/bin
     cd /opt/cni/bin
     wget https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz
-    tar -xzvf cni-plugins-linux-amd64-v1.1.1.tgz
+    tar -xzvf cni-plugins-linux-amd64-v1.1.1.tgz    
     ```
 - On kube-master
 
