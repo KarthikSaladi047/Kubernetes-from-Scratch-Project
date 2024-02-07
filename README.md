@@ -826,14 +826,19 @@ Now restart Kubelet, so that we will see the status of node is Ready.
 
   Thank you for taking the time to read through this documentation for the "Kubernetes from Scratch" project. I hope you found it informative and helpful in understanding the steps required to set up a Kubernetes cluster from scratch.
 
-  Building a Kubernetes cluster can be a challenging task, but I believe that with this detailed instructions and explanations, you can successfully set up your own cluster and take advantage of the many benefits that Kubernetes offers.
+  Building a Kubernetes cluster can be a challenging task, but I believe that with these detailed instructions and explanations, you can successfully set up your own cluster and take advantage of the many benefits that Kubernetes offers.
 
   I really love working with Kubernetes and I hope that this project has helped you in your Kubernetes journey.
 
-  Once again, thank you for your time and interest in this project. I wish you all the best in your future endeavors.
+  If you find this project useful or have any suggestions for improvements, feel free to reach out to karthiksaladi047@gmail.com.
+
+  Once again, thank you for your time and interest in this project. I wish you all the best in your future endeavours.
 
   Best regards,
-  **Karthik Saladi**
   
-  ![2021-10-10_16-20-20-8bd9e11866600964acce5420f99c86cf](https://user-images.githubusercontent.com/105864615/221418915-b8267ebd-5ba2-457c-af37-2828170373a0.jpg)
+  **Karthik Saladi**
+
+<div align="center" >
+ <img src="https://github.com/KarthikSaladi047/Kubernetes-from-Scratch-Project/assets/105864615/c521d7c8-eb9c-46ca-b7e2-8f9ec0e7f09a.png" width="30%" /> 
+</div>
 
